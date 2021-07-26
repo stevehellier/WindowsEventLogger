@@ -16,16 +16,11 @@ namespace uptime_recorder
         public App(string[] args)
         {
 
-            if (string.IsNullOrEmpty(_databaseName) || string.IsNullOrEmpty(_databaseServer))
-            {
-                Console.WriteLine("Please make sure the environment variables are set correctly!");
-                Environment.Exit(0);
-            }
-
-            if (!HasArguments(args))
+            if (string.IsNullOrEmpty(_databaseName) || string.IsNullOrEmpty(_databaseServer) || !HasArguments(args))
             {
                 DisplayHelp();
-                Environment.Exit(0);
+                Environment.ExitCode = 87;
+                Environment.Exit(87);
             }
 
             _connectionsString = $@"Server={_databaseServer};Database={_databaseName};Trusted_Connection=Yes";
