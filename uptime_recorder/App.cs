@@ -5,10 +5,9 @@ namespace uptime_recorder
 {
     class App : IApp
     {
-        readonly string[] _args;
         readonly string _connectionsString;
-        readonly string _databaseName = "";
-        readonly string _databaseServer = "";
+        readonly string _databaseName = Environment.GetEnvironmentVariable("DatabaseName");
+        readonly string _databaseServer = Environment.GetEnvironmentVariable("DatabaseServer");
         readonly string _dateTime;
         readonly string _eventId;
         readonly string _event;
@@ -16,30 +15,30 @@ namespace uptime_recorder
 
         public App(string[] args)
         {
-            _args = args;
-            _dateTime = GetDateTime();
-            _machineName = GetMachineName();
+
+            if (string.IsNullOrEmpty(_databaseName) || string.IsNullOrEmpty(_databaseServer))
+            {
+                Console.WriteLine("Please make sure the environment variables are set correctly!");
+                Environment.Exit(0);
+            }
+
+            if (!HasArguments(args))
+            {
+                DisplayHelp();
+                Environment.Exit(0);
+            }
 
             _connectionsString = $@"Server={_databaseServer};Database={_databaseName};Trusted_Connection=Yes";
+            _dateTime = GetDateTime();
+            _event = GetEventType(_eventId);
+            _eventId = args[0];
+            _machineName = GetMachineName();
 
-            if (HasArguments())
-            {
-                _eventId = _args[0];
-                _event = GetEventType(_eventId);
-            }
         }
 
         public void Run()
         {
-            if (HasArguments())
-            {
-                DoUpdate(_connectionsString);
-            }
-            else
-            {
-                Console.WriteLine("Please specify an event ID to log");
-                return;
-            }
+            DoUpdate(_connectionsString);
         }
 
 
@@ -84,10 +83,10 @@ namespace uptime_recorder
             return result;
         }
 
-        private bool HasArguments()
+        private bool HasArguments(string[] args)
         {
             bool result = false;
-            if (_args.Length >= 1)
+            if (args.Length >= 1)
             {
                 result = true;
             }
@@ -118,7 +117,7 @@ namespace uptime_recorder
                     {
                         InsertCommand = sqlCommand
                     };
-                    sqlCommand.ExecuteNonQuery();
+                    //sqlCommand.ExecuteNonQuery();
 
                     sqlCommand.Dispose();
 
@@ -131,5 +130,18 @@ namespace uptime_recorder
                 throw;
             }
         }
+
+        private void DisplayHelp()
+        {
+            Console.WriteLine();
+            Console.WriteLine("UptimeMonitor v0.1");
+            Console.WriteLine("Logs Windows EventID to an external database.");
+            Console.WriteLine();
+            Console.WriteLine("Usage: UptimeMoniter <EventId>");
+            Console.WriteLine();
+            Console.WriteLine("The database server and name are set via the environment variables");
+            Console.WriteLine("\"DatabaseServer\" and \"DatabaseName\"");
+        }
+
     }
 }
